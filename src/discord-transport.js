@@ -8,6 +8,7 @@ export default class DiscordTransport {
      * @param {string} options.webhook - The Discord webhook URL to send the logs to.
      * @param {string} options.username - The username to use when sending the logs.
      * @param {string} options.avatar - The avatar URL to use when sending the logs.
+     * @param {string} options.thumb - The thumb URL to use when sending the logs.
      * @param {Object} options.electronLog - The ElectronLog instance to use for logging errors.
      * @param {string} options.level - The log level to use when sending the logs.
      * @param {Function} options.transformFn - The function to use for transforming the log message.
@@ -18,6 +19,7 @@ export default class DiscordTransport {
         this.webhook = options.webhook;
         this.username = options.username;
         this.avatar = options.avatar;
+        this.thumb = options.thumb;
         this.electronLog = options.electronLog;
         this.level = options.level ?? 'silly';
         this.transformFn = options.transformFn;
@@ -40,7 +42,10 @@ export default class DiscordTransport {
      */
     getFactory() {
 
-        return this.transport.bind(this);
+        let transport = this.transport.bind(this);
+        transport.level = this.level;
+
+        return transport;
     }
 
     /**
@@ -66,7 +71,7 @@ export default class DiscordTransport {
                 {
                     description: this.transform(message),
                     thumbnail: {
-                        url: this.avatar
+                        url: this.thumb
                     },
                     color: this.colors[message.level],
                     fields: [
@@ -122,7 +127,7 @@ export default class DiscordTransport {
             return this.transformFn(message);
 
         else
-            return Util.inspect(message.data, true);
+            return Util.inspect(message.data.pop(), true);
     }
 
     /**
