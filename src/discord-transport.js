@@ -139,7 +139,7 @@ export default class DiscordTransport {
         if (this.reportErrorFn && typeof this.reportErrorFn == 'function')
             return this.reportErrorFn(error);
 
-        if (this.electronLog.logMessageWithTransports) 
+        if (this.electronLog?.logMessageWithTransports) 
 
             return this.electronLog.logMessageWithTransports(
                 {
