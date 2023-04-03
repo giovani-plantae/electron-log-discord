@@ -1,6 +1,6 @@
 {
   "name": "electron-log-discord",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An extension for electron-log that sends logs to Discord",
   "type": "module",
   "main": "index.js",
@@ -8,6 +8,10 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
     "coverage": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage && codecov"
   },
+  "files": [
+    "src",
+    "index.js"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
