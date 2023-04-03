@@ -14,16 +14,19 @@ export default class DiscordTransport {
      * @param {Function} options.transformFn - The function to use for transforming the log message.
      * @param {Function} options.reportErrorFn - The function to use for reporting errors.
      */
-    constructor(options) {
+    constructor(options = {}) {
+
+        if(!options.webhook)
+            throw new Error('webhook is required.');
 
         this.webhook = options.webhook;
-        this.username = options.username;
-        this.avatar = options.avatar;
-        this.thumb = options.thumb;
+        this.username = options.username ?? null;
+        this.avatar = options.avatar ?? null;
+        this.thumb = options.thumb ?? null;
         this.electronLog = options.electronLog;
         this.level = options.level ?? 'silly';
-        this.transformFn = options.transformFn;
-        this.reportErrorFn = options.reportErrorFn;
+        this.transformFn = options.transformFn ?? null;
+        this.reportErrorFn = options.reportErrorFn ?? null;
 
         this.colors = {
             error: 0xF44336,
