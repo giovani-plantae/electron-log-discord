@@ -249,22 +249,6 @@ describe('DiscordTransport', () => {
     });
 
     describe('transform', () => {
-        it('should call provided tranform function', () => {
-
-            const transformFn = jest.fn();
-
-            // Create instance
-            const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
-                transformFn
-            });
-
-            transport.transform({ data: ['test message'] });
-            expect(transformFn).toHaveBeenCalledWith({ data: ['test message'] });
-        });
 
         it('should return a string', () => {
 
@@ -281,21 +265,6 @@ describe('DiscordTransport', () => {
     });
 
     describe('reportError', () => {
-        it('should call provided reportError function', () => {
-            const reportErrorFn = jest.fn();
-
-            // Create instance
-            const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
-                reportErrorFn
-            });
-
-            transport.reportError(new Error('fail'));
-            expect(reportErrorFn).toHaveBeenCalledWith(new Error('fail'));
-        });
 
         it('should call logMessageWithTransports when Electron Log instance is provided', () => {
 
@@ -317,7 +286,7 @@ describe('DiscordTransport', () => {
             ElectronLog.logMessageWithTransports.mockRestore();
         });
 
-        it('should call console.error when no other report is available', () => {
+        it('should call console.error when Electron Log instance is not provided', () => {
 
             jest.spyOn(console, 'error')
                 .mockImplementation(jest.fn());

@@ -11,12 +11,10 @@ export default class DiscordTransport {
      * @param {string} options.thumb - The thumb URL to use when sending the logs.
      * @param {Object} options.electronLog - The ElectronLog instance to use for logging errors.
      * @param {string} options.level - The log level to use when sending the logs.
-     * @param {Function} options.transformFn - The function to use for transforming the log message.
-     * @param {Function} options.reportErrorFn - The function to use for reporting errors.
      */
     constructor(options = {}) {
 
-        if(!options.webhook)
+        if (!options.webhook)
             throw new Error('webhook is required.');
 
         this.webhook = options.webhook;
@@ -112,8 +110,8 @@ export default class DiscordTransport {
         return fetch(this.webhook, options)
             .then(response => {
                 if (!response.ok)
-                    throw new Error(`Erro ao enviar a mensagem: ${response.status} ${response.statusText}`);
-                
+                    throw new Error(`ElectronLogDiscord: cannot send HTTP request to ${this.webhook}`);
+
                 return response.body;
             })
             .catch(this.reportError.bind(this));
@@ -126,11 +124,7 @@ export default class DiscordTransport {
      */
     transform(message) {
 
-        if (this.transformFn && typeof this.transformFn == 'function')
-            return this.transformFn(message);
-
-        else
-            return Util.inspect(message.data.pop(), true);
+        return Util.inspect(message.data.pop(), true);
     }
 
     /**
@@ -139,17 +133,11 @@ export default class DiscordTransport {
      */
     reportError(error) {
 
-        if (this.reportErrorFn && typeof this.reportErrorFn == 'function')
-            return this.reportErrorFn(error);
-
-        if (this.electronLog?.logMessageWithTransports) 
+        if (this.electronLog?.logMessageWithTransports)
 
             return this.electronLog.logMessageWithTransports(
                 {
-                    data: [
-                        `ElectronLogDiscord: cannot send HTTP request to ${this.webhook}`,
-                        error
-                    ],
+                    data: [error],
                     level: 'warn',
                 },
                 [
