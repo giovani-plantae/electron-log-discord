@@ -5,7 +5,7 @@ This is a class-based plugin for `Electron Log` that allows you to easily send l
 Install using npm:
 
 ```bash
-npm i github:giovani-plantae/electron-log-discord
+npm install electron-log-discord
 ```
 
 # Usage
