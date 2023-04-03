@@ -35,7 +35,7 @@ ElectronLog.transports.discord = transport.getFactory();
 ```
 Now, whenever you call a logging method (e.g. `ElectronLog.info`, `ElectronLog.warn`, `ElectronLog.error`), the message will be sent to the specified Discord channel.
 
-# Options
+## Options
 The following options can be passed to DiscordTransport:
 
 - `webhook`: The Discord webhook URL to send the logs to. (required)
