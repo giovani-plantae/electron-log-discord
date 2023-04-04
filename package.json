@@ -12,8 +12,20 @@
     "src",
     "index.js"
   ],
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "electron",
+    "log",
+    "logger",
+    "logging",
+    "discord"
+  ],
+  "author": "Giovani Freitag",
+  "bugs": "https://github.com/giovani-plantae/electron-log-discord/issues",
+  "homepage": "https://github.com/giovani-plantae/electron-log-discord#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/giovani-plantae/electron-log-discord"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.0",
