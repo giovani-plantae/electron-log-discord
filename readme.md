@@ -1,5 +1,5 @@
-# Electron Log Discord
-This is a class-based plugin for `Electron Log` that allows you to easily send logs to a Discord channel using webhooks.
+# Electron Log Discord &middot; [![codecov](https://codecov.io/gh/giovani-plantae/electron-log-discord/branch/master/graph/badge.svg?token=SAFWI9SQ7W)](https://codecov.io/gh/giovani-plantae/electron-log-discord)
+This is a class-based plugin for [Electron Log](https://github.com/megahertz/electron-log) that allows you to easily send logs to a Discord channel using webhooks.
 
 # Installation
 Install using npm:
