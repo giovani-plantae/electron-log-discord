@@ -250,7 +250,7 @@ describe('DiscordTransport', () => {
             transport.reportError = reportErrorMock;
 
             await transport.send({});
-            expect(reportErrorMock).toHaveBeenCalledWith(new Error(`ElectronLogDiscord: cannot send HTTP request to https://discord.com/api/webhooks/0/a`));
+            expect(reportErrorMock).toHaveBeenCalledWith(new Error('ElectronLogDiscord: cannot send HTTP request to https://discord.com/api/webhooks/0/a'));
 
             global.fetch.mockRestore();
         });
@@ -266,7 +266,7 @@ describe('DiscordTransport', () => {
             // Create instance
             const transport = new DiscordTransport({
                 webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
+                username: "test",
                 avatar: 'https://example.com/avatar.png',
                 thumb: 'https://example.com/thumb.png',
             });
