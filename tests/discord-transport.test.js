@@ -6,6 +6,12 @@ import { describe, it, expect, jest } from '@jest/globals';
 describe('DiscordTransport', () => {
 
     describe('constructor', () => {
+
+        it('should throw an exception if webhook is not defined', () => {
+            
+            expect(() => new DiscordTransport({})).toThrow('webhook is required.');
+        });
+
         it('should initialize attributes', () => {
 
             const options = {
@@ -21,6 +27,7 @@ describe('DiscordTransport', () => {
 
             const transport = new DiscordTransport(options);
 
+            expect(transport).toBeInstanceOf(DiscordTransport);
             expect(transport.webhook).toBe(options.webhook);
             expect(transport.username).toBe(options.username);
             expect(transport.avatar).toBe(options.avatar);
@@ -222,6 +229,32 @@ describe('DiscordTransport', () => {
 
             global.fetch.mockRestore();
         });
+
+
+        it('should report error if response status is not ok', async () => {
+
+            jest.spyOn(global, 'fetch')
+                .mockImplementation(jest.fn(async () => ({
+                    ok: false
+                })));
+
+            // Create instance
+            const transport = new DiscordTransport({
+                webhook: 'https://discord.com/api/webhooks/0/a',
+                username: 'test',
+                avatar: 'https://example.com/avatar.png',
+                thumb: 'https://example.com/thumb.png',
+            });
+
+            const reportErrorMock = jest.fn();
+            transport.reportError = reportErrorMock;
+
+            await transport.send({});
+            expect(reportErrorMock).toHaveBeenCalledWith(new Error(`ElectronLogDiscord: cannot send HTTP request to https://discord.com/api/webhooks/0/a`));
+
+            global.fetch.mockRestore();
+        });
+
 
         it('should report error if fails', async () => {
 
