@@ -266,7 +266,7 @@ describe('DiscordTransport', () => {
             // Create instance
             const transport = new DiscordTransport({
                 webhook: 'https://discord.com/api/webhooks/0/a',
-                username: "test",
+                username: 'test',
                 avatar: 'https://example.com/avatar.png',
                 thumb: 'https://example.com/thumb.png',
             });
