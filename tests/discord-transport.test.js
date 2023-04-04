@@ -1,6 +1,6 @@
 import DiscordTransport from '../src/discord-transport.js';
-import ElectronLog from "electron-log";
-import { jest } from '@jest/globals';
+import ElectronLog from 'electron-log';
+import { describe, it, expect, jest } from '@jest/globals';
 
 
 describe('DiscordTransport', () => {
@@ -108,7 +108,7 @@ describe('DiscordTransport', () => {
                 avatar_url: 'https://example.com/avatar.png',
                 embeds: [
                     {
-                        description: "'test message'",
+                        description: '\'test message\'',
                         thumbnail: {
                             url: 'https://example.com/thumb.png'
                         },
@@ -147,7 +147,7 @@ describe('DiscordTransport', () => {
                     avatar_url: 'https://example.com/avatar.png',
                     embeds: [
                         {
-                            description: "'test message'",
+                            description: '\'test message\'',
                             thumbnail: {
                                 url: 'https://example.com/thumb.png'
                             },
@@ -241,8 +241,8 @@ describe('DiscordTransport', () => {
             const reportErrorMock = jest.fn();
             transport.reportError = reportErrorMock;
 
-            await transport.send({})
-            expect(reportErrorMock).toHaveBeenCalledWith(new Error('fail'))
+            await transport.send({});
+            expect(reportErrorMock).toHaveBeenCalledWith(new Error('fail'));
 
             global.fetch.mockRestore();
         });

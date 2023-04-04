@@ -24,6 +24,9 @@ jobs:
     - name: Installing dependencies
       run: npm ci
 
+    - name: Lint JavaScript files
+      run: npm run lint
+
     - name: Running tests
       run: npm test -- --coverage
 

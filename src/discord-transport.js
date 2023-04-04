@@ -1,4 +1,4 @@
-import Util from "util";
+import Util from 'util';
 
 export default class DiscordTransport {
 
@@ -89,7 +89,7 @@ export default class DiscordTransport {
                     ]
                 }
             ]
-        }
+        };
     }
 
     /**

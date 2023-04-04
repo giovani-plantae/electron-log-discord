@@ -1,1 +1,1 @@
-export { default } from "./src/discord-transport.js";
+export { default } from './src/discord-transport.js';
