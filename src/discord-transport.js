@@ -21,10 +21,7 @@ export default class DiscordTransport {
         this.username = options.username ?? null;
         this.avatar = options.avatar ?? null;
         this.thumb = options.thumb ?? null;
-        this.electronLog = options.electronLog;
         this.level = options.level ?? 'silly';
-        this.transformFn = options.transformFn ?? null;
-        this.reportErrorFn = options.reportErrorFn ?? null;
 
         this.colors = {
             error: 0xF44336,
@@ -35,6 +32,35 @@ export default class DiscordTransport {
             silly: 0x607D8B,
             log: 0x333333,
         };
+
+        this.bindTransportMethod();
+
+        if (options.electronLog)
+            this.attachTo(options.electronLog);
+    }
+
+    /**
+     * Binds the transport method to the current instance and defines a level property on it.
+     */
+    bindTransportMethod() {
+
+        this.transport = this.transport.bind(this);
+
+        Object.defineProperty(this.transport, 'level', {
+            get: () => this.level
+        });
+    }
+
+    /**
+     * Attaches the current transport instance to a given Electron Log instance.
+     * @param {Object} electronLog - The Electron Log instance to attach to.
+     * @returns {this} - The current DiscordTransport instance.
+     */
+    attachTo(electronLog) {
+
+        this.electronLog = electronLog;
+        this.electronLog.transports.discord = this.getFactory();
+        return this;
     }
 
     /**
@@ -43,10 +69,7 @@ export default class DiscordTransport {
      */
     getFactory() {
 
-        let transport = this.transport.bind(this);
-        transport.level = this.level;
-
-        return transport;
+        return this.transport;
     }
 
     /**
@@ -133,21 +156,20 @@ export default class DiscordTransport {
      */
     reportError(error) {
 
-        if (this.electronLog?.logMessageWithTransports)
+        if (!this.electronLog?.logMessageWithTransports) {
+            console.warn(error);
+            return;
+        }
 
-            return this.electronLog.logMessageWithTransports(
-                {
-                    data: [error],
-                    level: 'warn',
-                },
-                [
-                    this.electronLog.transports.console,
-                    this.electronLog.transports.ipc,
-                    this.electronLog.transports.file,
-                    this.electronLog.transports.remote
-                ]
-            );
+        const transportStack = new Set(Object.values(this.electronLog.transports));
+        transportStack.delete(this.transport);
 
-        console.error(error);
+        this.electronLog.logMessageWithTransports(
+            {
+                data: [error],
+                level: 'warn',
+            },
+            Array.from(transportStack)
+        );
     }
 }

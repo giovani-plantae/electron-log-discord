@@ -14,15 +14,15 @@ describe('DiscordTransport', () => {
 
         it('should initialize attributes', () => {
 
+            const electronLog = ElectronLog.create('test');
+
             const options = {
                 webhook: 'https://discord.com/api/webhooks/0/a',
                 username: 'test-user',
                 avatar: 'https://example.com/avatar.png',
                 thumb: 'https://example.com/thumb.png',
-                electronLog: {},
                 level: 'debug',
-                transformFn: jest.fn(),
-                reportErrorFn: jest.fn(),
+                electronLog
             };
 
             const transport = new DiscordTransport(options);
@@ -32,11 +32,8 @@ describe('DiscordTransport', () => {
             expect(transport.username).toBe(options.username);
             expect(transport.avatar).toBe(options.avatar);
             expect(transport.thumb).toBe(options.thumb);
-            expect(transport.electronLog).toBe(options.electronLog);
             expect(transport.level).toBe(options.level);
-            expect(transport.transformFn).toBe(options.transformFn);
-            expect(transport.reportErrorFn).toBe(options.reportErrorFn);
-
+            expect(transport.electronLog).toBe(options.electronLog);
         });
 
         it('should initialize level attribute as silly by default', () => {
@@ -61,6 +58,34 @@ describe('DiscordTransport', () => {
             expect(transport.colors).toHaveProperty('silly');
             expect(transport.colors).toHaveProperty('log');
         });
+
+        it('should attach it transport method to the Electron Log instance automatically when provided', () => {
+
+            const electronLog = ElectronLog.create('test');
+
+            const discordTransport = new DiscordTransport({
+                webhook: 'https://discord.com/api/webhooks/0/a',
+                electronLog
+            });
+
+            expect(electronLog.transports.discord).toBe(discordTransport.transport);
+        });
+    });
+
+    describe('attachTo', () => {
+
+        it('should attach it transport method to the Electron Log instance provided', () => {
+
+            const electronLog = ElectronLog.create('test');
+
+            const discordTransport = new DiscordTransport({
+                webhook: 'https://discord.com/api/webhooks/0/a'
+            });
+
+            discordTransport.attachTo(electronLog);
+
+            expect(electronLog.transports.discord).toBe(discordTransport.transport);
+        });
     });
 
     describe('getFactory', () => {
@@ -80,7 +105,7 @@ describe('DiscordTransport', () => {
             expect(sendMock).toHaveBeenCalledTimes(1);
         });
 
-        it('should return the transport method exposing the level attribute', () => {
+        it('should return the transport method exposing the very current level attribute', () => {
 
             const transport = new DiscordTransport({
                 webhook: 'https://discord.com/api/webhooks/0/a',
@@ -89,6 +114,10 @@ describe('DiscordTransport', () => {
             const transportMethod = transport.getFactory();
 
             expect(transportMethod.level).toBe('debug');
+
+            transport.level = 'warn';
+
+            expect(transportMethod.level).toBe('warn');
         });
     });
 
@@ -319,9 +348,9 @@ describe('DiscordTransport', () => {
             ElectronLog.logMessageWithTransports.mockRestore();
         });
 
-        it('should call console.error when Electron Log instance is not provided', () => {
+        it('should call console.warn when Electron Log instance is not provided', () => {
 
-            jest.spyOn(console, 'error')
+            jest.spyOn(console, 'warn')
                 .mockImplementation(jest.fn());
 
             // Create instance
@@ -333,9 +362,30 @@ describe('DiscordTransport', () => {
             });
 
             transport.reportError(new Error('fail'));
-            expect(console.error).toHaveBeenCalledTimes(1);
+            expect(console.warn).toHaveBeenCalledTimes(1);
 
-            console.error.mockRestore();
+            console.warn.mockRestore();
+        });
+
+        it('should report errors to every other custom transport', () => {
+
+            const electronLog = ElectronLog.create('test');
+
+            const discordTransport = new DiscordTransport({
+                webhook: 'https://discord.com/api/webhooks/0/a',
+                electronLog
+            });
+
+            const another = jest.fn();
+            another.level = 'silly';
+            electronLog.transports.another = another;
+
+            electronLog.transports.console.level = false;
+
+            discordTransport.reportError(new Error('fail'));
+
+            expect(another).toHaveBeenCalledTimes(1);
+            expect(another).toHaveBeenCalledWith(expect.objectContaining({ data: [new Error('fail')] }));
         });
     });
 });

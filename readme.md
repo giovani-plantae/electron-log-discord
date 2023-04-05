@@ -17,42 +17,38 @@ import ElectronLog from 'electron-log';
 import DiscordTransport from 'electron-log-discord';
 ```
 
-Create an instance of the DiscordTransport class:
+Create an instance of the `DiscordTransport` class:
 ```js
-const transport = new DiscordTransport({
+new DiscordTransport({
     webhook: 'https://discord.com/api/webhooks/...',
     username: 'My App',
     avatar: 'https://example.com/my-app-avatar.png',
-    level: 'warn',
+    level: 'info',
     electronLog: ElectronLog
 });
 ```
-Here, we're passing the webhook URL, the username and avatar that will be displayed in the Discord channel, the logging level, and the ElectronLog instance that we want to use.
-Finally, we register the transport with `ElectronLog`:
+Here, we're passing the webhook URL, the username and avatar that will be displayed in the Discord channel, the logging level, and the `ElectronLog` instance that we want to use.
 
-```js
-ElectronLog.transports.discord = transport.getFactory();
-```
 Now, whenever you call a logging method (e.g. `ElectronLog.info`, `ElectronLog.warn`, `ElectronLog.error`), the message will be sent to the specified Discord channel.
 
 ## Options
-The following options can be passed to DiscordTransport:
+The following options can be passed to `DiscordTransport`:
 
 - `webhook`: The Discord webhook URL to send the logs to. (required)
 - `username`: The username to use when sending the logs.
 - `avatar`: The avatar URL to use when sending the logs.
 - `thumb`: The thumb URL to use when sending the logs.
-- `electronLog`: The ElectronLog instance to use for logging errors.
 - `level`: The log level to use when sending the logs. (default: 'silly')
+- `electronLog`: The `ElectronLog` instance to use for logging.
 
 # Examples
 ## Sending logs only above a certain level
 You can configure `DiscordTransport` to only send logs above a certain level by setting the level option. For example, to only send logs at the 'warn' level or above:
 
 ```js
-const transport = new DiscordTransport({
+new DiscordTransport({
     webhook: 'https://discord.com/api/webhooks/...',
-    level: 'warn',
+    level: 'warn', // (error, warn, info, verbose, debug, silly, log)
 });
 ```
 
@@ -91,7 +87,7 @@ class CustomDiscordTransport extends DiscordTransport {
     }
 }
 
-const transport = new CustomDiscordTransport({
+new CustomDiscordTransport({
     webhook: 'https://discord.com/api/webhooks/...',
 });
 ```
