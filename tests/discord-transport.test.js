@@ -1,14 +1,21 @@
 import DiscordTransport from '../src/discord-transport.js';
+import { WebhookClient, EmbedBuilder } from 'discord.js';
 import ElectronLog from 'electron-log';
 import { describe, it, expect, jest } from '@jest/globals';
 
 
 describe('DiscordTransport', () => {
 
+    function generateValidWebHookUrl() {
+        const webhookId = Math.floor(Math.random() * 1000000000000000000).toString().padStart(18, '0');
+        const webhookToken = Array(68).fill(null).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+        return `https://discord.com/api/webhooks/${webhookId}/${webhookToken}`;
+    }
+
     describe('constructor', () => {
 
         it('should throw an exception if webhook is not defined', () => {
-            
+
             expect(() => new DiscordTransport({})).toThrow('webhook is required.');
         });
 
@@ -17,7 +24,7 @@ describe('DiscordTransport', () => {
             const electronLog = ElectronLog.create('test');
 
             const options = {
-                webhook: 'https://discord.com/api/webhooks/0/a',
+                webhook: generateValidWebHookUrl(),
                 username: 'test-user',
                 avatar: 'https://example.com/avatar.png',
                 thumb: 'https://example.com/thumb.png',
@@ -28,7 +35,7 @@ describe('DiscordTransport', () => {
             const transport = new DiscordTransport(options);
 
             expect(transport).toBeInstanceOf(DiscordTransport);
-            expect(transport.webhook).toBe(options.webhook);
+            expect(transport.webhook).toBeInstanceOf(WebhookClient);
             expect(transport.username).toBe(options.username);
             expect(transport.avatar).toBe(options.avatar);
             expect(transport.thumb).toBe(options.thumb);
@@ -39,7 +46,7 @@ describe('DiscordTransport', () => {
         it('should initialize level attribute as silly by default', () => {
 
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a'
+                webhook: generateValidWebHookUrl()
             });
             expect(transport.level).toBe('silly');
         });
@@ -47,7 +54,7 @@ describe('DiscordTransport', () => {
         it('should initialize colors attribute', () => {
 
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a'
+                webhook: generateValidWebHookUrl()
             });
 
             expect(transport.colors).toHaveProperty('error');
@@ -64,7 +71,7 @@ describe('DiscordTransport', () => {
             const electronLog = ElectronLog.create('test');
 
             const discordTransport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
+                webhook: generateValidWebHookUrl(),
                 electronLog
             });
 
@@ -79,7 +86,7 @@ describe('DiscordTransport', () => {
             const electronLog = ElectronLog.create('test');
 
             const discordTransport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a'
+                webhook: generateValidWebHookUrl()
             });
 
             discordTransport.attachTo(electronLog);
@@ -93,14 +100,15 @@ describe('DiscordTransport', () => {
         it('should return the transport method bound to the current instance and enable it to call the send method', () => {
 
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a'
+                webhook: generateValidWebHookUrl()
             });
-            const sendMock = jest.fn();
-            transport.send = sendMock;
 
-            const transportMethod = transport.getFactory();
+            const sendMock = jest.spyOn(transport, 'send')
+                .mockImplementation(jest.fn());
 
-            transportMethod({ data: ['test'] });
+            const electronLog = ElectronLog.create('test');
+            electronLog.transports.discord = transport.getFactory();
+            electronLog.log('test');
 
             expect(sendMock).toHaveBeenCalledTimes(1);
         });
@@ -108,7 +116,7 @@ describe('DiscordTransport', () => {
         it('should return the transport method exposing the very current level attribute', () => {
 
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
+                webhook: generateValidWebHookUrl(),
                 level: 'debug'
             });
             const transportMethod = transport.getFactory();
@@ -116,79 +124,101 @@ describe('DiscordTransport', () => {
             expect(transportMethod.level).toBe('debug');
 
             transport.level = 'warn';
-
             expect(transportMethod.level).toBe('warn');
+
+            transportMethod.level = 'error';
+            expect(transport.level).toBe('error');
         });
     });
 
     describe('transport', () => {
-        it('should call send method with a valid payload', () => {
 
-            // Create instance and mock send method
+        it('should be called if the log level is greater than or equal to the level defined in the class', () => {
+
+            const electronLog = ElectronLog.create('test');
+            electronLog.transports.console.level = false;
+
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl(),
+                level: 'warn',
+                electronLog
             });
-            const sendMock = jest.fn();
-            transport.send = sendMock;
 
-            // Get transport method and run
-            const transportMethod = transport.getFactory();
-            transportMethod({ data: ['test message'], level: 'debug', date: '0000-00-00T00:00:00.000Z' });
+            const sendMock = jest.spyOn(transport, 'send')
+                .mockImplementation(jest.fn());
 
-            // Check if send function received a valid payload
-            expect(sendMock).toBeCalledWith({
-                username: 'test',
-                avatar_url: 'https://example.com/avatar.png',
-                embeds: [
-                    {
-                        description: '\'test message\'',
-                        thumbnail: {
-                            url: 'https://example.com/thumb.png'
-                        },
-                        color: transport.colors.debug,
-                        fields: [
-                            {
-                                name: 'Level',
-                                value: 'debug',
-                                inline: true
-                            },
-                            {
-                                name: 'DateTime',
-                                value: '0000-00-00T00:00:00.000Z',
-                                inline: true
-                            }
-                        ]
-                    }
-                ]
+            electronLog.debug('test message');
+            electronLog.info('test message');
+            electronLog.warn('test message');
+            electronLog.error('test message');
+
+            expect(sendMock).toBeCalledTimes(2);
+        });
+
+        it('should be ignored if the log level is below the level defined in the class', () => {
+
+            const electronLog = ElectronLog.create('test');
+            electronLog.transports.console.level = false;
+
+            const transport = new DiscordTransport({
+                webhook: generateValidWebHookUrl(),
+                level: 'warn',
+                electronLog
             });
+
+            const sendMock = jest.spyOn(transport, 'send')
+                .mockImplementation(jest.fn());
+
+            electronLog.info('test message');
+            electronLog.debug('test message');
+            electronLog.verbose('test message');
+            electronLog.silly('test message');
+
+            expect(sendMock).not.toBeCalled();
+        });
+
+        it('should call send method with the send message', () => {
+
+            const electronLog = ElectronLog.create('test');
+            electronLog.transports.console.level = false;
+
+            const transport = new DiscordTransport({
+                webhook: generateValidWebHookUrl(),
+                electronLog
+            });
+
+            const sendMock = jest.spyOn(transport, 'send')
+                .mockImplementation(async () => {});
+
+            electronLog.info('test message');
+
+            expect(sendMock.mock.calls[0][0].embeds[0].data.description).toBe('\'test message\'');
         });
     });
 
     describe('getPayload', () => {
+
         it('should return the payload that will be sent to Discord', () => {
 
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
+                webhook: generateValidWebHookUrl(),
                 username: 'test',
                 avatar: 'https://example.com/avatar.png',
                 thumb: 'https://example.com/thumb.png',
             });
 
-            expect(transport.getPayload({ data: ['test message'], level: 'error', date: '0000-00-00T00:00:00.000Z' }))
+            const date = new Date();
+
+            expect(transport.getPayload({ data: ['test message'], level: 'error', date }))
                 .toStrictEqual({
                     username: 'test',
-                    avatar_url: 'https://example.com/avatar.png',
+                    avatarURL: 'https://example.com/avatar.png',
                     embeds: [
-                        {
-                            description: '\'test message\'',
-                            thumbnail: {
-                                url: 'https://example.com/thumb.png'
-                            },
-                            color: transport.colors.error,
-                            fields: [
+                        new EmbedBuilder()
+                            .setDescription('\'test message\'')
+                            .setThumbnail('https://example.com/thumb.png')
+                            .setColor(transport.colors.error)
+                            .addFields(
                                 {
                                     name: 'Level',
                                     value: 'error',
@@ -196,11 +226,10 @@ describe('DiscordTransport', () => {
                                 },
                                 {
                                     name: 'DateTime',
-                                    value: '0000-00-00T00:00:00.000Z',
+                                    value: date.toISOString(),
                                     inline: true
                                 }
-                            ]
-                        }
+                            )
                     ]
                 });
         });
@@ -210,103 +239,53 @@ describe('DiscordTransport', () => {
 
         it('should send the transformed message to Discord', async () => {
 
-            jest.spyOn(global, 'fetch')
-                .mockImplementation(jest.fn(async () => ({
-                    ok: true,
-                    body: 'ok'
-                })));
+            const electronLog = ElectronLog.create('test');
 
-            // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl(),
+                electronLog
             });
 
-            // Run and check mock
-            await transport.send({});
-            expect(fetch).toBeCalledWith('https://discord.com/api/webhooks/0/a', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
+            const sendMock = jest.spyOn(transport.webhook, 'send')
+                .mockImplementation(jest.fn(async () => {}));
 
-            global.fetch.mockRestore();
+            electronLog.info('test message');
+
+            expect(sendMock.mock.calls[0][0].embeds[0].data.description).toBe('\'test message\'');
         });
 
         it('should return the response body if completed successfully', async () => {
 
-            jest.spyOn(global, 'fetch')
-                .mockImplementation(jest.fn(async () => ({
-                    ok: true,
-                    body: 'ok'
-                })));
-
             // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl()
             });
+
+            jest.spyOn(transport.webhook, 'send')
+                .mockImplementation(jest.fn(async () => ({id: '1'})));
 
             // Run and check mock
-            expect(await transport.send({})).toEqual('ok');
-
-            global.fetch.mockRestore();
+            expect(await transport.send({})).toEqual({id: '1'});
         });
 
 
-        it('should report error if response status is not ok', async () => {
-
-            jest.spyOn(global, 'fetch')
-                .mockImplementation(jest.fn(async () => ({
-                    ok: false
-                })));
+        it('should report error if it fails', async () => {
 
             // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl()
             });
 
-            const reportErrorMock = jest.fn();
-            transport.reportError = reportErrorMock;
-
-            await transport.send({});
-            expect(reportErrorMock).toHaveBeenCalledWith(new Error('ElectronLogDiscord: cannot send HTTP request to https://discord.com/api/webhooks/0/a'));
-
-            global.fetch.mockRestore();
-        });
-
-
-        it('should report error if fails', async () => {
-
-            jest.spyOn(global, 'fetch')
+            jest.spyOn(transport.webhook, 'send')
                 .mockImplementation(jest.fn(async () => {
                     throw new Error('fail');
                 }));
 
-            // Create instance
-            const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
-            });
-
-            const reportErrorMock = jest.fn();
-            transport.reportError = reportErrorMock;
+            const reportErrorMock = jest.spyOn(transport, 'reportError')
+                .mockImplementation(jest.fn(async () => {}));
 
             await transport.send({});
             expect(reportErrorMock).toHaveBeenCalledWith(new Error('fail'));
-
-            global.fetch.mockRestore();
         });
     });
 
@@ -316,10 +295,7 @@ describe('DiscordTransport', () => {
 
             // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl()
             });
 
             expect(typeof transport.transform({ data: ['test message'] })).toBe('string');
@@ -335,10 +311,7 @@ describe('DiscordTransport', () => {
 
             // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png',
+                webhook: generateValidWebHookUrl(),
                 electronLog: ElectronLog
             });
 
@@ -355,10 +328,7 @@ describe('DiscordTransport', () => {
 
             // Create instance
             const transport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
-                username: 'test',
-                avatar: 'https://example.com/avatar.png',
-                thumb: 'https://example.com/thumb.png'
+                webhook: generateValidWebHookUrl()
             });
 
             transport.reportError(new Error('fail'));
@@ -372,7 +342,7 @@ describe('DiscordTransport', () => {
             const electronLog = ElectronLog.create('test');
 
             const discordTransport = new DiscordTransport({
-                webhook: 'https://discord.com/api/webhooks/0/a',
+                webhook: generateValidWebHookUrl(),
                 electronLog
             });
 
