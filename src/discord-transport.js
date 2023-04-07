@@ -1,5 +1,5 @@
 import Util from 'util';
-
+import { WebhookClient, EmbedBuilder } from 'discord.js';
 export default class DiscordTransport {
 
     /**
@@ -17,7 +17,7 @@ export default class DiscordTransport {
         if (!options.webhook)
             throw new Error('webhook is required.');
 
-        this.webhook = options.webhook;
+        this.webhook = new WebhookClient({ url: options.webhook });
         this.username = options.username ?? null;
         this.avatar = options.avatar ?? null;
         this.thumb = options.thumb ?? null;
@@ -47,7 +47,8 @@ export default class DiscordTransport {
         this.transport = this.transport.bind(this);
 
         Object.defineProperty(this.transport, 'level', {
-            get: () => this.level
+            get: () => this.level,
+            set: (level) => { this.level = level; }
         });
     }
 
@@ -88,30 +89,27 @@ export default class DiscordTransport {
      */
     getPayload(message) {
 
+        const embed = new EmbedBuilder()
+            .setDescription(this.transform(message))
+            .setThumbnail(this.thumb)
+            .setColor(this.colors[message.level])
+            .addFields(
+                {
+                    name: 'Level',
+                    value: message.level,
+                    inline: true
+                },
+                {
+                    name: 'DateTime',
+                    value: message.date.toISOString(),
+                    inline: true
+                }
+            );
+
         return {
             username: this.username,
-            avatar_url: this.avatar,
-            embeds: [
-                {
-                    description: this.transform(message),
-                    thumbnail: {
-                        url: this.thumb
-                    },
-                    color: this.colors[message.level],
-                    fields: [
-                        {
-                            name: 'Level',
-                            value: message.level,
-                            inline: true
-                        },
-                        {
-                            name: 'DateTime',
-                            value: message.date,
-                            inline: true
-                        }
-                    ]
-                }
-            ]
+            avatarURL: this.avatar,
+            embeds: [embed]
         };
     }
 
@@ -122,21 +120,9 @@ export default class DiscordTransport {
      */
     async send(payload) {
 
-        const options = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        };
-
-        return fetch(this.webhook, options)
-            .then(response => {
-                if (!response.ok)
-                    throw new Error(`ElectronLogDiscord: cannot send HTTP request to ${this.webhook}`);
-
-                return response.body;
-            })
+        return this.webhook
+            .send(payload)
+            .then(res => res)
             .catch(this.reportError.bind(this));
     }
 
@@ -161,15 +147,15 @@ export default class DiscordTransport {
             return;
         }
 
-        const transportStack = new Set(Object.values(this.electronLog.transports));
-        transportStack.delete(this.transport);
+        const { ...transports } = this.electronLog.transports;
+        delete transports.discord;
 
         this.electronLog.logMessageWithTransports(
             {
                 data: [error],
                 level: 'warn',
             },
-            Array.from(transportStack)
+            Object.values(transports)
         );
     }
 }
