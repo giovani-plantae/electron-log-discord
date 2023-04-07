@@ -1,6 +1,8 @@
 # Electron Log Discord &middot; [![codecov](https://codecov.io/gh/giovani-plantae/electron-log-discord/branch/master/graph/badge.svg?token=SAFWI9SQ7W)](https://codecov.io/gh/giovani-plantae/electron-log-discord)
 This is a class-based plugin for [Electron Log](https://github.com/megahertz/electron-log) that allows you to easily send logs to a Discord channel using webhooks.
 
+Never created webhooks in Discord? Check out the [official article](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks).
+
 # Installation
 Install using npm:
 
@@ -17,19 +19,16 @@ import ElectronLog from 'electron-log';
 import DiscordTransport from 'electron-log-discord';
 ```
 
-Create an instance of the `DiscordTransport` class:
+Create an instance of the `DiscordTransport` class, providing the `webhook URL` and the instance of `ElectronLog` that you want to use:
 ```js
 new DiscordTransport({
     webhook: 'https://discord.com/api/webhooks/...',
-    username: 'My App',
-    avatar: 'https://example.com/my-app-avatar.png',
-    level: 'info',
     electronLog: ElectronLog
 });
 ```
-Here, we're passing the webhook URL, the username and avatar that will be displayed in the Discord channel, the logging level, and the `ElectronLog` instance that we want to use.
+This will automatically add the `DiscordTransport` to `ElectronLog`, so now, whenever you call a logging method (e.g. `ElectronLog.info`, `ElectronLog.warn`, `ElectronLog.error`), the message will be sent to the specified Discord channel.
 
-Now, whenever you call a logging method (e.g. `ElectronLog.info`, `ElectronLog.warn`, `ElectronLog.error`), the message will be sent to the specified Discord channel.
+Additionally, you can provide the `username` and `avatar` of the message author that will be displayed on the Discord channel. It's also possible to limit the log `level` that this transport will accept. All options are available below.
 
 ## Options
 The following options can be passed to `DiscordTransport`:
@@ -48,7 +47,7 @@ You can configure `DiscordTransport` to only send logs above a certain level by 
 ```js
 new DiscordTransport({
     webhook: 'https://discord.com/api/webhooks/...',
-    level: 'warn', // (error, warn, info, verbose, debug, silly, log)
+    level: 'warn', // error, warn, info, verbose, debug, silly, log
 });
 ```
 
@@ -59,30 +58,30 @@ You can customize the appearance of the messages by extending the `DiscordTransp
 class CustomDiscordTransport extends DiscordTransport {
     getPayload(message) {
 
+        const embed = new EmbedBuilder()
+            .setThumbnail(this.thumb)
+            .setColor(this.colors[message.level])
+            .addFields(
+                {
+                    name: 'Level',
+                    value: message.level,
+                    inline: true
+                },
+                {
+                    name: 'DateTime',
+                    value: message.date.toISOString(),
+                    inline: true
+                },
+                {
+                    name: 'Description',
+                    value: this.transform(message),
+                }
+            );
+
         return {
             username: this.username,
-            avatar_url: this.avatar,
-            embeds: [
-                {
-                    color: this.colors[message.level],
-                    fields: [
-                        {
-                            name: 'Level',
-                            value: message.level,
-                            inline: true
-                        },
-                        {
-                            name: 'DateTime',
-                            value: message.date,
-                            inline: true
-                        },
-                        {
-                            name: 'Description',
-                            value: this.transform(message),
-                        }
-                    ]
-                }
-            ]
+            avatarURL: this.avatar,
+            embeds: [embed]
         };
     }
 }
