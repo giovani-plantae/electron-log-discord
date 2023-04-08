@@ -107,6 +107,7 @@ describe('DiscordTransport', () => {
                 .mockImplementation(jest.fn());
 
             const electronLog = ElectronLog.create('test');
+            electronLog.transports.console.level = false;
             electronLog.transports.discord = transport.getFactory();
             electronLog.log('test');
 
@@ -240,6 +241,7 @@ describe('DiscordTransport', () => {
         it('should send the transformed message to Discord', async () => {
 
             const electronLog = ElectronLog.create('test');
+            electronLog.transports.console.level = false;
 
             const transport = new DiscordTransport({
                 webhook: generateValidWebHookUrl(),
